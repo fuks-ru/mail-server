@@ -54,8 +54,6 @@ jobs:
             token: ${{ secrets.TELEGRAM_TOKEN }}
             format: markdown
             message: |
-              *mail-server*
+              *mail-server* [deploy](${{ env.ACTION_URL }}) by *${{ github.actor }}*
               steps: deploy *${{ needs.deploy.result == 'success' && '✅' || '⛔️' }}*
-              author: *${{ github.actor }}*
-              commit: [commit](${{ env.COMMIT_URL }})
-              action: [Deploy](${{ env.ACTION_URL }})
+              [commit](${{ env.COMMIT_URL }})
