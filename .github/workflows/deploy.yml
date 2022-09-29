@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Deploy new config
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ SSH_HOST }}
+          username: ${{ SSH_ROOT_USERNAME }}
+          key: ${{ SSH_ROOT_PRIVATE_KEY }}
+          source: "docker-compose.yml,mailserver.env,setup.sh"
+          target: "/server/fuks-mailer"
+
+      - name: Stop and run container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ SSH_HOST }}
+          username: ${{ SSH_ROOT_USERNAME }}
+          key: ${{ SSH_ROOT_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            cd /server/fuks-mailer
+            docker compose stop mailserver
+            docker compose up -d mailserver
+
+  notification:
+      name: Notification
+
+      needs: deploy
+
+      runs-on: ubuntu-latest
+
+      if: always()
+
+      steps:
+        - name: Send telegram message
+          uses: appleboy/telegram-action@master
+          env:
+            COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{github.sha}}
+            ACTION_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          with:
+            to: ${{ secrets.TELEGRAM_TO }}
+            token: ${{ secrets.TELEGRAM_TOKEN }}
+            format: markdown
+            message: |
+              *mail-server* Build *${{ needs.build.result == 'success' && '✅' || '⛔️' }}* Deploy *${{ needs.deploy.result == 'success' && '✅' || '⛔️' }}*
+
+              *${{ github.actor }}* created [commit](${{ env.COMMIT_URL }})
+  
+              [Build and deploy](${{ env.ACTION_URL }})
