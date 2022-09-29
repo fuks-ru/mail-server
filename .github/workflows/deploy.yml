@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.SSH_ROOT_USERNAME }}
           key: ${{ secrets.SSH_ROOT_PRIVATE_KEY }}
           source: "docker-compose.yml,mailserver.env,setup.sh"
-          target: "/server/fuks-mailer"
+          target: "/server/mail-server"
 
       - name: Stop and run container
         uses: appleboy/ssh-action@master
@@ -30,7 +30,7 @@ jobs:
           key: ${{ secrets.SSH_ROOT_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd /server/fuks-mailer
+            cd /server/mail-server
             docker compose stop mailserver
             docker compose up -d mailserver
 
